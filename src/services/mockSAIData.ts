@@ -1,0 +1,215 @@
+import { transformUserName, getDefaultProfilePic, getShabareshProfilePic } from '@/utils/userNameTransform';
+
+/**
+ * Mock SAI Data Service
+ * Provides demo coaches and athletes for SAI Admin Dashboard
+ * Real workouts still work - this just adds visual demo data
+ */
+
+export interface MockCoach {
+  id: string;
+  name: string;
+  profilePic: string;
+  athleteCount: number;
+  totalWorkouts: number;
+}
+
+export interface MockAthlete {
+  id: string;
+  name: string;
+  profilePic: string;
+  coachName: string;
+  workoutCount: number;
+  lastWorkout: string;
+  age?: number;
+  state?: string;
+}
+
+// Mock coaches using images from ppl folder
+export const MOCK_COACHES: MockCoach[] = [
+  {
+    id: 'coach-1',
+    name: 'Shabaresh',
+    profilePic: '/ppl/shabaresh.jpg',
+    athleteCount: 0, // Will be calculated dynamically
+    totalWorkouts: 0
+  },
+  {
+    id: 'coach-2',
+    name: 'Shabaresh',
+    profilePic: '/ppl/shabaresh.jpg',
+    athleteCount: 3,
+    totalWorkouts: 12
+  },
+  {
+    id: 'coach-3',
+    name: 'Shabaresh',
+    profilePic: '/ppl/shabaresh.jpg',
+    athleteCount: 2,
+    totalWorkouts: 8
+  }
+];
+
+// Mock athletes using images from ppl folder
+export const MOCK_ATHLETES: MockAthlete[] = [
+  // Athletes under Shabaresh
+  {
+    id: 'athlete-1',
+    name: 'Shabaresh',
+    profilePic: '/ppl/shabaresh.jpg',
+    coachName: 'Shabaresh',
+    workoutCount: 5,
+    lastWorkout: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+    age: 19,
+    state: 'Delhi'
+  },
+  {
+    id: 'athlete-2',
+    name: 'Shabaresh',
+    profilePic: '/ppl/shabaresh.jpg',
+    coachName: 'Shabaresh',
+    workoutCount: 4,
+    lastWorkout: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
+    age: 21,
+    state: 'Gujarat'
+  },
+  {
+    id: 'athlete-3',
+    name: 'Shabaresh',
+    profilePic: '/ppl/shabaresh.jpg',
+    coachName: 'Shabaresh',
+    workoutCount: 3,
+    lastWorkout: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+    age: 20,
+    state: 'Karnataka'
+  },
+  
+  // Athletes under Shabaresh
+  {
+    id: 'athlete-4',
+    name: 'Shabaresh',
+    profilePic: '/ppl/shabaresh.jpg',
+    coachName: 'Shabaresh',
+    workoutCount: 4,
+    lastWorkout: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), // 3 hours ago
+    age: 18,
+    state: 'Tamil Nadu'
+  },
+  {
+    id: 'athlete-5',
+    name: 'Shabaresh',
+    profilePic: '/ppl/shabaresh.jpg',
+    coachName: 'Shabaresh',
+    workoutCount: 4,
+    lastWorkout: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), // 6 hours ago
+    age: 22,
+    state: 'Maharashtra'
+  }
+];
+
+/**
+ * Get all mock coaches with real athlete data merged in
+ */
+export function getMockCoachesWithRealData(realAthletes: Array<{ name: string; workoutCount: number }>): MockCoach[] {
+  const coaches = [...MOCK_COACHES];
+  
+  // Update Shabaresh with real athlete data
+  const gvmCoach = coaches.find(c => c.name === 'Shabaresh');
+  if (gvmCoach) {
+    gvmCoach.athleteCount = realAthletes.length;
+    gvmCoach.totalWorkouts = realAthletes.reduce((sum, a) => sum + a.workoutCount, 0);
+  }
+  
+  return coaches;
+}
+
+/**
+ * Get all mock athletes with real athlete data merged in
+ */
+export function getMockAthletesWithRealData(realAthletes: Array<{ 
+  name: string; 
+  workoutCount: number; 
+  lastWorkout: string;
+  athleteProfilePic?: string;
+}>): MockAthlete[] {
+  const mockAthletes = [...MOCK_ATHLETES];
+  
+  // Add real athletes under Shabaresh
+  const realAthletesWithCoach = realAthletes.map(athlete => {
+    // Transform generic names to proper Indian names
+    const athleteName = transformUserName(athlete.name);
+    
+    // Get appropriate profile pic - check for Shabaresh first
+    let profilePic = getShabareshProfilePic(athlete.name, athlete.athleteProfilePic);
+    if (profilePic === athlete.athleteProfilePic || (!profilePic && !athlete.athleteProfilePic)) {
+      profilePic = getDefaultProfilePic(athlete.name, athlete.athleteProfilePic);
+    }
+    
+    return {
+      id: `real-${athleteName.toLowerCase().replace(/\s+/g, '-')}`,
+      name: athleteName,
+      profilePic: profilePic,
+      coachName: 'Shabaresh',
+      workoutCount: athlete.workoutCount,
+      lastWorkout: athlete.lastWorkout,
+      age: 18 + Math.floor(Math.random() * 7), // Random age 18-24
+      state: ['Delhi', 'Mumbai', 'Bangalore', 'Chennai', 'Kolkata', 'Hyderabad'][Math.floor(Math.random() * 6)]
+    };
+  });
+  
+  return [...realAthletesWithCoach, ...mockAthletes];
+}
+
+/**
+ * Get mock workouts for demo athletes (not real ones)
+ */
+export function getMockWorkoutsForAthlete(athleteName: string) {
+  // Only return mock data for demo athletes
+  const mockAthlete = MOCK_ATHLETES.find(a => a.name === athleteName);
+  if (!mockAthlete) {
+    return []; // Real athlete - no mock data
+  }
+  
+  // Generate mock workout data
+  const workouts = [];
+  const activities = ['Push-ups', 'Squats', 'Sit-ups', 'Pull-ups'];
+  
+  for (let i = 0; i < mockAthlete.workoutCount; i++) {
+    const activity = activities[i % activities.length];
+    const timestamp = new Date(Date.now() - (i + 1) * 24 * 60 * 60 * 1000); // Days ago
+    
+    workouts.push({
+      id: `mock-${athleteName}-${i}`,
+      athleteName: mockAthlete.name,
+      athleteProfilePic: mockAthlete.profilePic,
+      activityName: activity,
+      totalReps: Math.floor(Math.random() * 20) + 10,
+      correctReps: Math.floor(Math.random() * 15) + 8,
+      incorrectReps: Math.floor(Math.random() * 5) + 2,
+      duration: Math.floor(Math.random() * 120) + 60,
+      accuracy: Math.floor(Math.random() * 30) + 70,
+      formScore: ['Excellent', 'Good', 'Fair'][Math.floor(Math.random() * 3)],
+      repDetails: [],
+      timestamp: timestamp.toISOString(),
+      screenshots: [],
+      videoUrl: undefined,
+      pdfUrl: undefined
+    });
+  }
+  
+  return workouts;
+}
+
+/**
+ * Check if an athlete is a mock/demo athlete
+ */
+export function isMockAthlete(athleteName: string): boolean {
+  return MOCK_ATHLETES.some(a => a.name === athleteName);
+}
+
+/**
+ * Check if a coach is a mock/demo coach
+ */
+export function isMockCoach(coachName: string): boolean {
+  return MOCK_COACHES.some(c => c.name === coachName);
+}
